@@ -1,0 +1,17 @@
+# Полный диалог для варианта 8.
+ls /
+mkdir /scratch
+mkdir -p /scratch/a/b
+mkdir -p /scratch/a/b
+cd /scratch/a
+echo "создан каталог" b
+find /scratch
+cd /
+rm -r /scratch/a
+ls /scratch
+rm -r /scratch
+rm -f /missing
+rm /home/user/projects/data.bin
+find /home -name "*.bin"
+who
+exit

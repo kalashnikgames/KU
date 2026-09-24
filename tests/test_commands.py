@@ -56,6 +56,29 @@ class CommandTests(unittest.TestCase):
             self.session.execute("find", ["/missing"])
         self.assertEqual(self.session.cwd, "/")
 
+    def test_mkdir_and_rm_keep_changes_in_memory(self):
+        """Создание и удаление меняют VFS, включая рекурсивные случаи."""
+        self.capture("mkdir", ["-p", "/new/a/b"])
+        self.assertIn("/new/a/b", self.session.vfs.directories)
+        with self.assertRaises(CommandError):
+            self.session.execute("rm", ["/new"])
+        self.capture("rm", ["-r", "/new"])
+        self.assertNotIn("/new", self.session.vfs.directories)
+        self.capture("rm", ["/home/user/docs/note.txt"])
+        self.assertNotIn("/home/user/docs/note.txt", self.session.vfs.files)
+        self.capture("rm", ["-f", "/missing"])
+
+    def test_mkdir_and_rm_errors(self):
+        """Неверные операции не повреждают корень и текущий каталог."""
+        with self.assertRaises(CommandError):
+            self.session.execute("mkdir", ["/absent/child"])
+        with self.assertRaises(CommandError):
+            self.session.execute("rm", ["-r", "/"])
+        self.session.execute("cd", ["/home/user"])
+        with self.assertRaises(CommandError):
+            self.session.execute("rm", ["-r", "/home"])
+        self.assertIn("/home", self.session.vfs.directories)
+
 
 if __name__ == "__main__":
     unittest.main()

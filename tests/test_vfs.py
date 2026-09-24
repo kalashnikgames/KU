@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 from src.vfs import VFS, VfsError
+from src.commands import ShellSession
 
 
 class VfsTests(unittest.TestCase):
@@ -32,6 +33,19 @@ class VfsTests(unittest.TestCase):
                 archive.writestr("../escape", "bad")
             with self.assertRaises(VfsError):
                 VFS.from_zip(path)
+
+    def test_mutation_does_not_change_archive(self):
+        """После rm и mkdir исходный ZIP остается побайтово прежним."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "image.zip"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("file.txt", "original")
+            original = path.read_bytes()
+            session = ShellSession(VFS.from_zip(path))
+            session.execute("mkdir", ["/new"])
+            session.execute("rm", ["/file.txt"])
+            self.assertEqual(path.read_bytes(), original)
+            self.assertIn("/file.txt", VFS.from_zip(path).files)
 
 
 if __name__ == "__main__":

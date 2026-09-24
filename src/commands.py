@@ -66,6 +66,8 @@ class ShellSession:
             "find": self.find,
             "who": self.who,
             "echo": self.echo,
+            "rm": self.rm,
+            "mkdir": self.mkdir,
         }
         if command not in handlers:
             raise CommandError(f"команда не найдена: {command}")
@@ -150,6 +152,61 @@ class ShellSession:
         no_newline = bool(arguments and arguments[0] == "-n")
         words = arguments[1:] if no_newline else arguments
         print(" ".join(words), end="" if no_newline else "\n")
+
+    def rm(self, arguments):
+        """Удалить файлы или каталоги только из дерева в памяти."""
+        options, targets = self.split_options(arguments, "rf")
+        if not targets and "f" not in options:
+            raise CommandError("rm: требуется путь")
+        for text in targets:
+            path = self.resolve(text)
+            if path in self.vfs.files:
+                del self.vfs.files[path]
+            elif path in self.vfs.directories:
+                self.remove_directory(path, recursive="r" in options)
+            elif "f" not in options:
+                raise CommandError(f"rm: нет такого пути: {path}")
+
+    def remove_directory(self, path, recursive):
+        """Удалить каталог с потомками при наличии флага -r."""
+        if path == "/" or self.cwd == path:
+            raise CommandError(f"rm: нельзя удалить текущий каталог: {path}")
+        if self.cwd.startswith(path + "/"):
+            raise CommandError(f"rm: каталог содержит текущий: {path}")
+        if not recursive:
+            raise CommandError(f"rm: каталог требует -r: {path}")
+        prefix = path + "/"
+        self.vfs.files = {
+            name: data for name, data in self.vfs.files.items()
+            if not name.startswith(prefix)
+        }
+        self.vfs.directories = {
+            name for name in self.vfs.directories
+            if name != path and not name.startswith(prefix)
+        }
+
+    def mkdir(self, arguments):
+        """Создать один или несколько виртуальных каталогов."""
+        options, targets = self.split_options(arguments, "p")
+        if not targets:
+            raise CommandError("mkdir: требуется путь")
+        for text in targets:
+            self.make_directory(self.resolve(text), parents="p" in options)
+
+    def make_directory(self, path, parents):
+        """Создать каталог, при -p также создать предков."""
+        if path in self.vfs.files:
+            raise CommandError(f"mkdir: уже существует файл: {path}")
+        if path in self.vfs.directories:
+            if not parents:
+                raise CommandError(f"mkdir: каталог уже существует: {path}")
+            return
+        parent = posixpath.dirname(path)
+        if parent not in self.vfs.directories:
+            if not parents:
+                raise CommandError(f"mkdir: нет родительского каталога: {parent}")
+            self.make_directory(parent, parents=True)
+        self.vfs.directories.add(path)
 
     @staticmethod
     def split_options(arguments, allowed):
