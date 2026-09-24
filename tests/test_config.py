@@ -18,8 +18,8 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / "config.yaml"
             config.write_text(
-                "vfs_path: from_file.zip\n"
-                "startup_script: 'run file.start'\n",
+                'vfs_path: "from_file.zip" # comment\n'
+                "startup_script: 'run file.start' # comment\n",
                 encoding="utf-8",
             )
             settings = load_settings([

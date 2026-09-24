@@ -23,18 +23,37 @@ def parse_scalar(value):
     """Прочитать строковый скаляр YAML: обычный или в кавычках."""
     if value.startswith('"'):
         try:
-            result = json.loads(value)
+            result, position = json.JSONDecoder().raw_decode(value)
         except json.JSONDecodeError as error:
             raise ConfigError(f"неверная строка YAML: {error}") from error
+        remainder = value[position:].strip()
     elif value.startswith("'"):
-        if not value.endswith("'") or len(value) < 2:
-            raise ConfigError("незакрытая строка YAML")
-        result = value[1:-1].replace("''", "'")
+        result, remainder = parse_single_quoted(value)
     else:
         result = value.split(" #", maxsplit=1)[0].strip()
+        remainder = ""
+    if remainder and not remainder.startswith("#"):
+        raise ConfigError("лишний текст после значения YAML")
     if not isinstance(result, str) or not result:
         raise ConfigError("путь должен быть непустой строкой")
     return result
+
+
+def parse_single_quoted(value):
+    """Прочитать одинарные кавычки YAML с удвоенными апострофами."""
+    characters = []
+    position = 1
+    while position < len(value):
+        character = value[position]
+        if character == "'":
+            if value[position + 1:position + 2] == "'":
+                characters.append("'")
+                position += 2
+                continue
+            return "".join(characters), value[position + 1:].strip()
+        characters.append(character)
+        position += 1
+    raise ConfigError("незакрытая строка YAML")
 
 
 def read_yaml(path):

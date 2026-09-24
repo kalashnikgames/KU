@@ -49,7 +49,8 @@ def run_startup(path, session=None):
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except OSError as error:
-        raise CommandError(f"не удалось прочитать сценарий {path}: {error}") from error
+        message = f"не удалось прочитать сценарий {path}: {error}"
+        raise CommandError(message) from error
     for number, line in enumerate(lines, start=1):
         if not line.strip() or line.lstrip().startswith("#"):
             continue

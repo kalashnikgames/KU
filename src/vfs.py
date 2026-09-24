@@ -31,13 +31,15 @@ class VFS:
                     vfs.add_entry(entry, archive)
                 return vfs
         except (OSError, zipfile.BadZipFile, RuntimeError) as error:
-            raise VfsError(f"не удалось прочитать VFS {path}: {error}") from error
+            message = f"не удалось прочитать VFS {path}: {error}"
+            raise VfsError(message) from error
 
     def add_entry(self, entry, archive):
         """Добавить безопасный путь из ZIP и его родительские каталоги."""
         raw = entry.filename.replace("\\", "/")
         parts = raw.strip("/").split("/")
-        if raw.startswith("/") or any(part in ("", ".", "..") for part in parts):
+        invalid_part = any(part in ("", ".", "..") for part in parts)
+        if raw.startswith("/") or invalid_part:
             raise VfsError(f"недопустимый путь в ZIP: {raw}")
         path = "/" + "/".join(parts)
         parent = posixpath.dirname(path)

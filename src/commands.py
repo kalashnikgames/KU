@@ -9,6 +9,10 @@ import socket
 from src.vfs import VFS
 
 
+SINGLE_TARGET_COUNT = 1
+NAME_FILTER_ARGUMENT_COUNT = 2
+
+
 class CommandError(Exception):
     """Ошибка команды, видимая пользователю."""
 
@@ -35,7 +39,9 @@ class ShellSession:
             return "/"
         if text.startswith("~/"):
             text = text[1:]
-        source = text if text.startswith("/") else posixpath.join(self.cwd, text)
+        source = text
+        if not text.startswith("/"):
+            source = posixpath.join(self.cwd, text)
         return posixpath.normpath(source)
 
     def require_exists(self, path):
@@ -81,7 +87,7 @@ class ShellSession:
         for index, text in enumerate(targets):
             path = self.resolve(text)
             self.require_exists(path)
-            if len(targets) != 1:
+            if len(targets) != SINGLE_TARGET_COUNT:
                 print(f"{path}:")
             if path in self.vfs.files:
                 self.print_entry(path, posixpath.basename(path), options)
@@ -108,7 +114,7 @@ class ShellSession:
 
     def cd(self, arguments):
         """Перейти в существующий каталог VFS."""
-        if len(arguments) > 1:
+        if len(arguments) > SINGLE_TARGET_COUNT:
             raise CommandError("cd: требуется не более одного пути")
         path = self.resolve(arguments[0] if arguments else "~")
         self.require_exists(path)
@@ -118,28 +124,36 @@ class ShellSession:
 
     def find(self, arguments):
         """Найти пути рекурсивно, при необходимости по шаблону имени."""
-        path_text = "."
-        pattern = None
-        position = 0
-        if arguments and arguments[0] != "-name":
-            path_text = arguments[0]
-            position = 1
-        if arguments[position:]:
-            if len(arguments[position:]) != 2:
-                raise CommandError("find: используйте [путь] [-name шаблон]")
-            if arguments[position] != "-name":
-                raise CommandError("find: поддерживается только -name")
-            pattern = arguments[position + 1]
+        path_text, pattern = self.parse_find_arguments(arguments)
         path = self.resolve(path_text)
         self.require_exists(path)
         paths = sorted(self.vfs.directories | self.vfs.files.keys())
         for candidate in paths:
-            inside = candidate == path or candidate.startswith(path.rstrip("/") + "/")
+            prefix = path.rstrip("/") + "/"
+            inside = candidate == path or candidate.startswith(prefix)
             matches = pattern is None or fnmatch.fnmatchcase(
                 posixpath.basename(candidate), pattern
             )
             if inside and matches:
                 print(candidate)
+
+    @staticmethod
+    def parse_find_arguments(arguments):
+        """Выделить начальный путь и необязательный шаблон -name."""
+        path_text = "."
+        pattern = None
+        position = 0
+        if arguments and arguments[0] != "-name":
+            path_text = arguments[0]
+            position = SINGLE_TARGET_COUNT
+        remaining = arguments[position:]
+        if remaining:
+            if len(remaining) != NAME_FILTER_ARGUMENT_COUNT:
+                raise CommandError("find: используйте [путь] [-name шаблон]")
+            if remaining[0] != "-name":
+                raise CommandError("find: поддерживается только -name")
+            pattern = remaining[1]
+        return path_text, pattern
 
     def who(self, arguments):
         """Показать реального пользователя и узел текущего сеанса."""
@@ -204,7 +218,8 @@ class ShellSession:
         parent = posixpath.dirname(path)
         if parent not in self.vfs.directories:
             if not parents:
-                raise CommandError(f"mkdir: нет родительского каталога: {parent}")
+                message = f"mkdir: нет родительского каталога: {parent}"
+                raise CommandError(message)
             self.make_directory(parent, parents=True)
         self.vfs.directories.add(path)
 

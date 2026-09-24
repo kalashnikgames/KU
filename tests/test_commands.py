@@ -11,13 +11,13 @@ from src.vfs import VFS
 class CommandTests(unittest.TestCase):
     """Проверить навигацию, поиск и сообщения об ошибках."""
 
-    def setUp(self):
+    def new_session(self):
         """Создать небольшое дерево непосредственно в памяти."""
         vfs = VFS()
         vfs.directories.update({"/home", "/home/user", "/home/user/docs"})
         vfs.files["/home/user/docs/note.txt"] = "aGVsbG8="
         vfs.files["/home/user/.hidden"] = ""
-        self.session = ShellSession(vfs)
+        return ShellSession(vfs)
 
     def capture(self, command, arguments):
         """Получить текст команды без терминала."""
@@ -28,6 +28,7 @@ class CommandTests(unittest.TestCase):
 
     def test_cd_and_ls(self):
         """cd меняет каталог, ls показывает его содержимое."""
+        self.session = self.new_session()
         self.capture("cd", ["/home/user"])
         self.assertEqual(self.session.cwd, "/home/user")
         self.assertEqual(self.capture("ls", []), "docs\n")
@@ -38,6 +39,7 @@ class CommandTests(unittest.TestCase):
 
     def test_find_echo_who(self):
         """Поиск по имени и текстовые команды дают ожидаемый вывод."""
+        self.session = self.new_session()
         self.assertEqual(
             self.capture("find", ["/home", "-name", "*.txt"]),
             "/home/user/docs/note.txt\n",
@@ -48,6 +50,7 @@ class CommandTests(unittest.TestCase):
 
     def test_invalid_paths_and_options(self):
         """Ошибочные пути и флаги не меняют сеанс."""
+        self.session = self.new_session()
         with self.assertRaises(CommandError):
             self.session.execute("cd", ["/missing"])
         with self.assertRaises(CommandError):
@@ -58,6 +61,7 @@ class CommandTests(unittest.TestCase):
 
     def test_mkdir_and_rm_keep_changes_in_memory(self):
         """Создание и удаление меняют VFS, включая рекурсивные случаи."""
+        self.session = self.new_session()
         self.capture("mkdir", ["-p", "/new/a/b"])
         self.assertIn("/new/a/b", self.session.vfs.directories)
         with self.assertRaises(CommandError):
@@ -70,6 +74,7 @@ class CommandTests(unittest.TestCase):
 
     def test_mkdir_and_rm_errors(self):
         """Неверные операции не повреждают корень и текущий каталог."""
+        self.session = self.new_session()
         with self.assertRaises(CommandError):
             self.session.execute("mkdir", ["/absent/child"])
         with self.assertRaises(CommandError):
