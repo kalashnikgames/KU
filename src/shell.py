@@ -1,8 +1,14 @@
-"""Минимальная интерактивная оболочка (этап 1)."""
+"""Интерактивная оболочка с настройками и стартовым сценарием."""
 
 import getpass
 import shlex
 import socket
+
+from src.config import ConfigError, load_settings
+
+
+class CommandError(Exception):
+    """Ошибка команды, о которой следует сообщить пользователю."""
 
 
 def make_prompt():
@@ -10,12 +16,12 @@ def make_prompt():
     return f"{getpass.getuser()}@{socket.gethostname()}:~$ "
 
 
-def execute_line(line):
+def execute_line(line, strict=False):
     """Разобрать строку и исполнить команду-заглушку."""
     try:
-        words = shlex.split(line)
+        words = shlex.split(line, comments=True)
     except ValueError as error:
-        print(f"shell: ошибка разбора: {error}")
+        report_error(f"ошибка разбора: {error}", strict)
         return True
 
     if not words:
@@ -24,17 +30,42 @@ def execute_line(line):
     command, *arguments = words
     if command == "exit":
         if arguments:
-            print("exit: аргументы не поддерживаются")
+            report_error("exit: аргументы не поддерживаются", strict)
             return True
         return False
     if command in ("ls", "cd"):
         print(f"{command}: {arguments!r}")
         return True
-    print(f"shell: команда не найдена: {command}")
+    report_error(f"команда не найдена: {command}", strict)
     return True
 
 
-def main():
+def report_error(message, strict):
+    """Напечатать ошибку или передать ее стартовому сценарию."""
+    if strict:
+        raise CommandError(message)
+    print(f"shell: {message}")
+
+
+def run_startup(path):
+    """Исполнить сценарий, показывая ввод и вывод как в диалоге."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as error:
+        raise CommandError(f"не удалось прочитать сценарий {path}: {error}") from error
+    for number, line in enumerate(lines, start=1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        print(f"{make_prompt()}{line}")
+        try:
+            if not execute_line(line, strict=True):
+                return False
+        except CommandError as error:
+            raise CommandError(f"{path}:{number}: {error}") from error
+    return True
+
+
+def run_repl():
     """Читать команды до exit или конца входного потока."""
     while True:
         try:
@@ -49,5 +80,26 @@ def main():
             return
 
 
+def main(argv=None):
+    """Прочитать настройки, выполнить сценарий и открыть REPL."""
+    try:
+        settings = load_settings(argv)
+    except ConfigError as error:
+        print(f"config: {error}")
+        return 1
+    print(f"config: {settings.config_path}")
+    print(f"vfs: {settings.vfs_path}")
+    print(f"startup: {settings.startup_script}")
+    if settings.startup_script:
+        try:
+            if not run_startup(settings.startup_script):
+                return 0
+        except CommandError as error:
+            print(f"startup: {error}")
+            return 1
+    run_repl()
+    return 0
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

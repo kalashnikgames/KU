@@ -1,0 +1,3 @@
+# Пути из файла имеют приоритет над параметрами командной строки.
+vfs_path: sample.zip
+startup_script: stage2.start
