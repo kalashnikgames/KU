@@ -5,6 +5,7 @@ import shlex
 import socket
 
 from src.config import ConfigError, load_settings
+from src.vfs import VFS, VfsError
 
 
 class CommandError(Exception):
@@ -90,6 +91,15 @@ def main(argv=None):
     print(f"config: {settings.config_path}")
     print(f"vfs: {settings.vfs_path}")
     print(f"startup: {settings.startup_script}")
+    if settings.vfs_path:
+        try:
+            vfs = VFS.from_zip(settings.vfs_path)
+        except VfsError as error:
+            print(f"vfs: {error}")
+            return 1
+        message = vfs.motd()
+        if message is not None:
+            print(message, end="" if message.endswith("\n") else "\n")
     if settings.startup_script:
         try:
             if not run_startup(settings.startup_script):

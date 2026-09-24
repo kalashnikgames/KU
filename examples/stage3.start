@@ -1,0 +1,4 @@
+# Заглушки этапов 1-3 и обработка аргументов в кавычках.
+ls "two words"
+cd /home/user/projects
+exit
