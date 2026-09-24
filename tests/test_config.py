@@ -45,14 +45,14 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "run.start"
             path.write_text(
-                "# comment\nls 'two words'\nwrong\n",
+                "# comment\necho 'two words'\nwrong\n",
                 encoding="utf-8",
             )
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
                 with self.assertRaisesRegex(CommandError, ":3:"):
                     run_startup(path)
-            self.assertIn("ls: ['two words']", output.getvalue())
+            self.assertIn("two words", output.getvalue())
             self.assertNotIn("# comment", output.getvalue())
 
 

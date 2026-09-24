@@ -19,9 +19,9 @@ class ShellTests(unittest.TestCase):
 
     def test_quoted_arguments(self):
         """Кавычки группируют слова в один аргумент."""
-        running, output = self.run_line('ls "two words" plain')
+        running, output = self.run_line('echo "two words" plain')
         self.assertTrue(running)
-        self.assertEqual(output, "ls: ['two words', 'plain']\n")
+        self.assertEqual(output, "two words plain\n")
 
     def test_bad_quote(self):
         """Ошибка кавычек не прерывает цикл команд."""

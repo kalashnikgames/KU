@@ -1,0 +1,13 @@
+# Команды для глубокого ZIP-образа.
+ls /
+ls -al /home/user/projects
+cd /home/user
+ls projects
+cd projects
+find .
+find / -name "*.bin"
+who
+echo "два слова" и еще
+echo -n без перевода строки
+echo
+exit
