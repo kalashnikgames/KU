@@ -49,6 +49,7 @@ def report_error(message, strict):
 
 def run_startup(path):
     """Исполнить сценарий, показывая ввод и вывод как в диалоге."""
+    error_flag = False
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except OSError as error:
@@ -62,7 +63,10 @@ def run_startup(path):
             if not execute_line(line, strict=True):
                 return False
         except CommandError as error:
-            raise CommandError(f"{path}:{number}: {error}") from error
+            print("error: ", error)
+            error_flag = True
+    if error_flag:
+        raise CommandError(f"error in startup script")
     return True
 
 
@@ -95,9 +99,8 @@ def main(argv=None):
         try:
             if not run_startup(settings.startup_script):
                 return 0
-        except CommandError as error:
-            print(f"startup: {error}")
-            return 1
+        except CommandError:
+            print(f"Ошибка в стартовом скрипте.")
     run_repl()
     return 0
 
