@@ -5,6 +5,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+LEN_2 = 2
 
 class ConfigError(Exception):
     """Ошибка чтения или структуры конфигурации."""
@@ -27,7 +28,7 @@ def parse_scalar(value):
         except json.JSONDecodeError as error:
             raise ConfigError(f"неверная строка YAML: {error}") from error
     elif value.startswith("'"):
-        if not value.endswith("'") or len(value) < 2:
+        if not value.endswith("'") or len(value) < LEN_2:
             raise ConfigError("незакрытая строка YAML")
         result = value[1:-1].replace("''", "'")
     else:
