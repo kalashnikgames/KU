@@ -27,7 +27,8 @@ class ConfigTests(unittest.TestCase):
                 "--startup", "from_cli.start",
                 "--config", str(config),
             ])
-            self.assertEqual(settings.vfs_path, config.parent / "from_file.zip")
+            self.assertEqual(settings.vfs_path, config.parent /
+                             "from_file.zip")
             self.assertEqual(
                 settings.startup_script,
                 config.parent / "run file.start",

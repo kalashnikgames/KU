@@ -23,7 +23,8 @@ def make_fixture(kind, path):
     """Записать выбранный пример для локального запуска."""
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         for name, content in FIXTURES[kind].items():
-            data = content.encode("utf-8") if isinstance(content, str) else content
+            data = content.encode("utf-8") if isinstance(content, str) \
+                else content
             archive.writestr(name, data)
 
 
