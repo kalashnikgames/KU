@@ -34,7 +34,7 @@ class ShellSession:
         self.cwd = "/"
 
     def resolve(self, text):
-        """Преобразовать путь оболочки в абсолютный путь VFS."""
+        """Преобразовать путь с ``.`` и ``..`` в абсолютный путь VFS."""
         if text == "~":
             return "/"
         if text.startswith("~/"):
@@ -81,8 +81,8 @@ class ShellSession:
         return True
 
     def ls(self, arguments):
-        """Показать файлы и каталоги; поддержать -a и -l."""
-        options, targets = self.split_options(arguments, "al")
+        """Показать файлы и каталоги; поддержать флаги -a, -l и -h."""
+        options, targets = self.split_options(arguments, "alh")
         targets = targets or ["."]
         for index, text in enumerate(targets):
             path = self.resolve(text)
@@ -108,9 +108,23 @@ class ShellSession:
         if "l" in options:
             kind = "d" if path in self.vfs.directories else "-"
             size = 0 if kind == "d" else len(self.vfs.read_bytes(path))
+            if "h" in options:
+                size = self.human_size(size)
             print(f"{kind}rw-r--r-- {size:>8} {name}")
         else:
             print(name)
+
+    @staticmethod
+    def human_size(size):
+        """Вернуть размер в удобном для чтения формате."""
+        units = ("B", "K", "M", "G", "T", "P")
+        value = float(size)
+        for unit in units:
+            if value < 1024 or unit == units[-1]:
+                if unit == "B":
+                    return f"{int(value)}{unit}"
+                return f"{value:.1f}{unit}".replace(".0", "")
+            value /= 1024
 
     def cd(self, arguments):
         """Перейти в существующий каталог VFS."""
