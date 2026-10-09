@@ -14,7 +14,10 @@ class CommandTests(unittest.TestCase):
     def setUp(self):
         """Создать небольшое дерево непосредственно в памяти."""
         vfs = VFS()
-        vfs.directories.update({"/home", "/home/user", "/home/user/docs"})
+        vfs.directories.update({
+            "/home", "/home/user", "/home/user/docs", "/home/boddy",
+            "/home/boddy/info",
+        })
         vfs.files["/home/user/docs/note.txt"] = "aGVsbG8="
         vfs.files["/home/user/.hidden"] = ""
         self.session = ShellSession(vfs)
@@ -35,6 +38,17 @@ class CommandTests(unittest.TestCase):
         self.assertIn("drw-r--r--", self.capture("ls", ["-l"]))
         self.capture("cd", ["docs"])
         self.assertEqual(self.session.cwd, "/home/user/docs")
+
+    def test_ls_combined_options_and_normalized_paths(self):
+        """ls принимает объединенные флаги, а команды сворачивают . и ..."""
+        self.assertIn(".hidden", self.capture("ls", ["-lah", "/home/user"]))
+        self.assertIn("0B", self.capture("ls", ["-l", "-a", "-h", "/home/user"]))
+        self.capture("cd", ["home/user/data/../../boddy/././info"])
+        self.assertEqual(self.session.cwd, "/home/boddy/info")
+        self.assertEqual(
+            self.capture("find", ["/home/user/docs/.././docs", "-name", "*.txt"]),
+            "/home/user/docs/note.txt\n",
+        )
 
     def test_find_echo_who(self):
         """Поиск по имени и текстовые команды дают ожидаемый вывод."""

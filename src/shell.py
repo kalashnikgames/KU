@@ -44,7 +44,7 @@ def report_error(message, strict):
 
 def run_startup(path, session=None):
     """Исполнить сценарий, показывая ввод и вывод как в диалоге."""
-    error_flag = False
+    error_location = None
     if session is None:
         session = ShellSession()
     try:
@@ -61,9 +61,11 @@ def run_startup(path, session=None):
                 return False
         except CommandError as error:
             print("error: ", error)
-            error_flag = True
-    if error_flag:
-        raise CommandError(f"error in startup script")
+            if error_location is None:
+                error_location = (number, error)
+    if error_location is not None:
+        number, error = error_location
+        raise CommandError(f"{path}:{number}: {error}")
     return True
 
 
