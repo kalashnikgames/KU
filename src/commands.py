@@ -35,7 +35,8 @@ class ShellSession:
             return "/"
         if text.startswith("~/"):
             text = text[1:]
-        source = text if text.startswith("/") else posixpath.join(self.cwd, text)
+        source = text if text.startswith("/") else (
+            posixpath.join(self.cwd, text))
         return posixpath.normpath(source)
 
     def require_exists(self, path):
@@ -146,7 +147,8 @@ class ShellSession:
         self.require_exists(path)
         paths = sorted(self.vfs.directories | self.vfs.files.keys())
         for candidate in paths:
-            inside = candidate == path or candidate.startswith(path.rstrip("/") + "/")
+            inside = (candidate == path or
+                      candidate.startswith(path.rstrip("/") + "/"))
             matches = pattern is None or fnmatch.fnmatchcase(
                 posixpath.basename(candidate), pattern
             )

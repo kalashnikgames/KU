@@ -42,11 +42,13 @@ class CommandTests(unittest.TestCase):
     def test_ls_combined_options_and_normalized_paths(self):
         """ls принимает объединенные флаги, а команды сворачивают . и ..."""
         self.assertIn(".hidden", self.capture("ls", ["-lah", "/home/user"]))
-        self.assertIn("0B", self.capture("ls", ["-l", "-a", "-h", "/home/user"]))
+        self.assertIn("0B",
+                      self.capture("ls", ["-l", "-a", "-h", "/home/user"]))
         self.capture("cd", ["home/user/data/../../boddy/././info"])
         self.assertEqual(self.session.cwd, "/home/boddy/info")
         self.assertEqual(
-            self.capture("find", ["/home/user/docs/.././docs", "-name", "*.txt"]),
+            self.capture("find",
+                         ["/home/user/docs/.././docs", "-name", "*.txt"]),
             "/home/user/docs/note.txt\n",
         )
 
