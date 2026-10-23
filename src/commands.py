@@ -9,6 +9,7 @@ import socket
 from src.vfs import VFS
 
 
+A1 = 1024
 SINGLE_TARGET_COUNT = 1
 NAME_FILTER_ARGUMENT_COUNT = 2
 
@@ -120,11 +121,11 @@ class ShellSession:
         units = ("B", "K", "M", "G", "T", "P")
         value = float(size)
         for unit in units:
-            if value < 1024 or unit == units[-1]:
+            if value < A1 or unit == units[-1]:
                 if unit == "B":
                     return f"{int(value)}{unit}"
                 return f"{value:.1f}{unit}".replace(".0", "")
-            value /= 1024
+            value /= A1
 
     def cd(self, arguments):
         """Перейти в существующий каталог VFS."""
