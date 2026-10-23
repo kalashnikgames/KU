@@ -38,7 +38,8 @@ class VFS:
         """Добавить безопасный путь из ZIP и его родительские каталоги."""
         raw = entry.filename.replace("\\", "/")
         parts = raw.strip("/").split("/")
-        if raw.startswith("/") or any(part in ("", ".", "..") for part in parts):
+        if raw.startswith("/") or any(part in ("", ".", "..")
+                                      for part in parts):
             raise VfsError(f"недопустимый путь в ZIP: {raw}")
         path = "/" + "/".join(parts)
         parent = posixpath.dirname(path)

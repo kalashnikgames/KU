@@ -9,6 +9,10 @@ import socket
 from src.vfs import VFS
 
 
+A1 = 1024
+A2 = 2
+
+
 class CommandError(Exception):
     """Ошибка команды, видимая пользователю."""
 
@@ -113,11 +117,11 @@ class ShellSession:
         units = ("B", "K", "M", "G", "T", "P")
         value = float(size)
         for unit in units:
-            if value < 1024 or unit == units[-1]:
+            if value < A1 or unit == units[-1]:
                 if unit == "B":
                     return f"{int(value)}{unit}"
                 return f"{value:.1f}{unit}".replace(".0", "")
-            value /= 1024
+            value /= A1
 
     def cd(self, arguments):
         """Перейти в существующий каталог VFS."""
@@ -138,12 +142,16 @@ class ShellSession:
             path_text = arguments[0]
             position = 1
         if arguments[position:]:
-            if len(arguments[position:]) != 2:
+            if len(arguments[position:]) != A2:
                 raise CommandError("find: используйте [путь] [-name шаблон]")
-            if arguments[position] != "-name":
+            elif arguments[position] != "-name":
                 raise CommandError("find: поддерживается только -name")
-            pattern = arguments[position + 1]
+            else:
+                pattern = arguments[position + 1]
         path = self.resolve(path_text)
+        self.find_2(path, pattern)
+
+    def find_2(self, path, pattern):
         self.require_exists(path)
         paths = sorted(self.vfs.directories | self.vfs.files.keys())
         for candidate in paths:
